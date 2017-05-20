@@ -13,8 +13,16 @@
 
     <properties>
         <war.name>stock-server</war.name>
+        <tomcat.host>localhost</tomcat.host>
+        <tomcat.port>8080</tomcat.port>
+        <tomcat.bash.user>tomcat</tomcat.bash.user>
+        <tomcat.bash.pass>qwerty</tomcat.bash.pass>
+        <tomcat.home>/home/borislav/apache-tomcat-7.0.77</tomcat.home>
+        <tomcat.appdir>/home/borislav/apache-tomcat-7.0.77/webapps</tomcat.appdir>
+        <tomcat.start>/home/borislav/apache-tomcat-7.0.77/bin/startup.sh</tomcat.start>
+        <tomcat.stop>/home/borislav/apache-tomcat-7.0.77/bin/shutdown.sh</tomcat.stop>
+        <app.url>http://localhost:${tomcat.port}/stock/</app.url>
     </properties>
-
     <dependencies>
         <dependency>
             <groupId>org.apache.poi</groupId>
@@ -186,6 +194,176 @@
             <artifactId>spring-websocket</artifactId>
             <version>4.3.7.RELEASE</version>
         </dependency>
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>9.4.1212</version>
+        </dependency>
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20140107</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.8.0</version>
+        </dependency>
     </dependencies>
 
+    <build>
+        <finalName>${war.name}</finalName>
+        <filters>
+            <filter>${project.basedir}/src/main/resources/config.properties</filter>
+        </filters>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <excludes>
+                    <exclude>**/*.xlsx</exclude>
+                </excludes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <includes>
+                    <include>**/*.xlsx</include>
+                </includes>
+            </resource>
+        </resources>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-war-plugin</artifactId>
+                <version>2.1.1</version>
+                <configuration>
+                    <webResources>
+                        <resource>
+                            <filtering>true</filtering>
+                            <directory>src/main/webapp</directory>
+                            <includes>
+                                <include>**/META-INF/context.xml</include>
+                            </includes>
+                        </resource>
+                    </webResources>
+                    <failOnMissingWebXml>false</failOnMissingWebXml>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>properties-maven-plugin</artifactId>
+                <version>1.0-alpha-2</version>
+                <executions>
+                    <execution>
+                        <id>clean</id>
+                        <phase>pre-clean</phase>
+                        <goals>
+                            <goal>read-project-properties</goal>
+                        </goals>
+                        <configuration>
+                            <files>
+                                <file>${project.basedir}/src/main/resources/config.properties</file>
+                            </files>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>install</id>
+                        <phase>install</phase>
+                        <goals>
+                            <goal>read-project-properties</goal>
+                        </goals>
+                        <configuration>
+                            <files>
+                                <file>${project.basedir}/src/main/resources/config.properties</file>
+                            </files>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>1.8</version>
+                <executions>
+                    <execution>
+                        <id>deploy.client</id>
+                        <phase>install</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <!--<sshexec host="${tomcat.host}" username="${tomcat.bash.user}"
+                                         password="${tomcat.bash.pass}" trust="true" failonerror="no"
+                                         command="${tomcat.stop}"/>
+                                <sshexec host="${tomcat.host}" username="${tomcat.bash.user}"
+                                         password="${tomcat.bash.pass}" trust="true" failonerror="no"
+                                         command="pid=$(ps -fu ${tomcat.bash.user} | grep ${tomcat.home} | grep -v grep|awk '{print $2}');c=0;while kill -0 $pid; do echo 'waiting for shutdown tomcat...'; sleep 2; ((c++)); if [ $c -eq 4 ]; then kill -9 $pid; fi done" />
+                                <sshexec host="${tomcat.host}" username="${tomcat.bash.user}"
+                                         password="${tomcat.bash.pass}" trust="true"
+                                         command="rm -rf ${tomcat.appdir}/${war.name}"  failonerror="no"/>
+                                <sshexec host="${tomcat.host}" username="${tomcat.bash.user}"
+                                         password="${tomcat.bash.pass}" trust="true"
+                                         command="rm -f ${tomcat.appdir}/${war.name}.war"  failonerror="no"/>-->
+                                <!--<scp
+                                        todir="${tomcat.bash.user}:${tomcat.bash.pass}@${tomcat.host}:${tomcat.appdir}"
+                                        trust="true" failonerror="no" sftp="yes"
+                                        file="${project.basedir}/target/${war.name}.war" />
+                                <sshexec host="${tomcat.host}" username="${tomcat.bash.user}"
+                                         password="${tomcat.bash.pass}" trust="true"
+                                         command="${tomcat.start}"  failonerror="no"/>-->
+                                <scp
+                                        todir="tomcat:qwerty@localhost:/etc/tomcat/catalina/localhost"
+                                        trust="true" failonerror="no" sftp="yes"
+                                        file="${project.basedir}/target/${war.name}.war" />
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.ant</groupId>
+                        <artifactId>ant-jsch</artifactId>
+                        <version>1.8.1</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>com.jcraft</groupId>
+                        <artifactId>jsch</artifactId>
+                        <version>0.1.54</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.cargo</groupId>
+                <artifactId>cargo-maven2-plugin</artifactId>
+                <version>1.4.8</version>
+                <configuration>
+                    <container>
+                        <containerId>tomcat7x</containerId>
+                        <type>remote</type>
+                    </container>
+                    <configuration>
+                        <type>runtime</type>
+                        <properties>
+                            <cargo.hostname>localhost</cargo.hostname>
+                            <cargo.protocol>http</cargo.protocol>
+                            <cargo.remote.password>qwerty</cargo.remote.password>
+                            <cargo.remote.uri>http://localhost:8080/manager/text</cargo.remote.uri>
+                            <cargo.remote.username>tomcat</cargo.remote.username>
+                            <cargo.servlet.port>8080</cargo.servlet.port>
+                        </properties>
+                    </configuration>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>xml-apis</groupId>
+                <artifactId>xml-apis</artifactId>
+                <version>1.4.01</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 </project>
